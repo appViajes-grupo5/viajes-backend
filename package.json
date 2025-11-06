@@ -1,0 +1,23 @@
+{
+  "name": "viajes-backend",
+  "version": "1.0.0",
+  "description": "API REST para el TFM de appViajes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appViajes-grupo5/viajes-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/appViajes-grupo5/viajes-backend/issues"
+  },
+  "homepage": "https://github.com/appViajes-grupo5/viajes-backend#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
