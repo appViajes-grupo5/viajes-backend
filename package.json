@@ -19,5 +19,8 @@
   "homepage": "https://github.com/appViajes-grupo5/viajes-backend#readme",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
   }
 }
