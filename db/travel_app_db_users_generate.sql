@@ -8,7 +8,7 @@
 -- Los hashes de abajo corresponden a esas contraseñas (generados con bcrypt, costo 10).
 
 -- Usar la base de datos
-USE travel_app_db;
+USE grupo5_viajes;
 
 -- Insertar múltiples usuarios
 INSERT INTO users 

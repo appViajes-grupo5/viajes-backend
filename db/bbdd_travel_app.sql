@@ -1,10 +1,10 @@
 -- Creación de la base de datos (Schema) si no existe
-CREATE DATABASE IF NOT EXISTS travel_app_db
+CREATE DATABASE IF NOT EXISTS grupo5_viajes
 DEFAULT CHARACTER SET utf8mb4
 DEFAULT COLLATE utf8mb4_unicode_ci;
 
 -- Usar la base de datos
-USE travel_app_db;
+USE grupo5_viajes;
 
 -- Tabla de Usuarios (Users)
 -- Almacena la información de registro y perfil de cada usuario.
