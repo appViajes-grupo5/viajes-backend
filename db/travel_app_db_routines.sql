@@ -1,8 +1,8 @@
-CREATE DATABASE  IF NOT EXISTS `travel_app_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `travel_app_db`;
+CREATE DATABASE  IF NOT EXISTS `grupo5_viajes` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `grupo5_viajes`;
 -- MySQL dump 10.13  Distrib 8.0.43, for Win64 (x86_64)
 --
--- Host: 127.0.0.1    Database: travel_app_db
+-- Host: 127.0.0.1    Database: grupo5_viajes
 -- ------------------------------------------------------
 -- Server version	8.0.43
 
@@ -18,7 +18,7 @@ USE `travel_app_db`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Dumping routines for database 'travel_app_db'
+-- Dumping routines for database 'grupo5_viajes'
 --
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
