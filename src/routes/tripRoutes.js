@@ -8,8 +8,8 @@ router.get("/", tripController.getTrips);
 router.get("/:id", tripController.getTrip);
 
 // Rutas protegidas (solo con login)
-router.post("/", authMiddleware, tripController.createTrip);
-router.put("/:id", authMiddleware, tripController.updateTrip);
-router.delete("/:id", authMiddleware, tripController.deleteTrip);
+// router.post("/", authMiddleware, tripController.createTrip);
+// router.put("/:id", authMiddleware, tripController.updateTrip);
+// router.delete("/:id", authMiddleware, tripController.deleteTrip);
 
 module.exports = router;
