@@ -1,9 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const tripController = require('../controllers/tripController');
+const tripController = require("../controllers/tripController");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 
-router.get('/', tripController.getTrips);
-router.get('/:id', tripController.getTrip);
+// Rutas públicas
+router.get("/", tripController.getTrips);
+router.get("/:id", tripController.getTrip);
 
-//  exportar el router directamente
+// Rutas protegidas (solo con login)
+// router.post("/", authMiddleware, tripController.createTrip);
+// router.put("/:id", authMiddleware, tripController.updateTrip);
+// router.delete("/:id", authMiddleware, tripController.deleteTrip);
+
 module.exports = router;

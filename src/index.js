@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const tripRoutes = require('./routes/tripRoutes');
 const authRoutes = require('./routes/authRoutes');
+const tripCommentsRoutes = require('./routes/tripCommentsRoutes');
 
 const app = express();
 
@@ -14,9 +15,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
 });
 
-// 👇 AQUÍ USAMOS routers (tienen que ser funciones)
+//  USAMOS routers (tienen que ser funciones)
 app.use('/api/trips', tripRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/trip-comments', tripCommentsRoutes);
 
 const PORT = process.env.PORT || 4000;
 
