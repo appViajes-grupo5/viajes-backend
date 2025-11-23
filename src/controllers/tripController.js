@@ -2,6 +2,7 @@ const Trip = require('../models/tripModel');
 
 // --- GESTIÓN DE VIAJES (Código base optimizado) ---
 
+// Obtener todos los viajes
 async function getTrips(req, res) {
   try {
     const trips = await Trip.getAllTrips();
@@ -12,6 +13,7 @@ async function getTrips(req, res) {
   }
 }
 
+// Obtener un viaje
 async function getTrip(req, res) {
   try {
     const trip = await Trip.getTripById(req.params.id);
@@ -90,80 +92,10 @@ async function deleteTrip(req, res) {
   }
 }
 
-// --- CRUD PARTICIPANTES ---
-
-// 1. Unirse a un viaje
-async function joinTrip(req, res) {
-  const { tripId } = req.params;
-  const { userId } = req.body;
-
-  if (!userId) return res.status(400).json({ error: "Falta userId" });
-
-  try {
-    const existing = await Trip.getParticipant(tripId, userId);
-    if (existing) {
-      return res.status(409).json({ error: 'Ya has solicitado unirte a este viaje' });
-    }
-
-    await Trip.addParticipant(tripId, userId);
-    res.status(201).json({ message: 'Solicitud enviada correctamente' });
-  } catch (err) {
-    console.error("Error en joinTrip:", err);
-    res.status(500).json({ error: 'Error al unirse al viaje' });
-  }
-}
-
-// 2. Ver participantes
-async function getTripParticipants(req, res) {
-  try {
-    const participants = await Trip.getParticipantsByTripId(req.params.tripId);
-    res.json(participants);
-  } catch (err) {
-    console.error("Error en getTripParticipants:", err);
-    res.status(500).json({ error: 'Error obteniendo participantes' });
-  }
-}
-
-// 3. Actualizar estado (Aprobar/Rechazar)
-async function updateParticipantStatus(req, res) {
-  const { tripId } = req.params;
-  const { userId, status } = req.body; 
-
-  if (!userId || !status) return res.status(400).json({ error: "Faltan datos (userId, status)" });
-
-  try {
-    await Trip.updateParticipantStatus(tripId, userId, status);
-    res.json({ message: `Participante ${status} correctamente` });
-  } catch (err) {
-    console.error("Error en updateParticipantStatus:", err);
-    res.status(500).json({ error: 'Error actualizando estado' });
-  }
-}
-
-// 4. Salir del viaje
-async function leaveTrip(req, res) {
-  const { tripId } = req.params;
-  const { userId } = req.body;
-
-  if (!userId) return res.status(400).json({ error: "Falta userId" });
-
-  try {
-    await Trip.removeParticipant(tripId, userId);
-    res.json({ message: 'Has salido del viaje correctamente' });
-  } catch (err) {
-    console.error("Error en leaveTrip:", err);
-    res.status(500).json({ error: 'Error al salir del viaje' });
-  }
-}
-
 module.exports = { 
   getTrips, 
   getTrip, 
   createTrip, 
   updateTrip, 
-  deleteTrip,
-  joinTrip, 
-  getTripParticipants, 
-  updateParticipantStatus, 
-  leaveTrip 
-};
+  deleteTrip
+  };
