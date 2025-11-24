@@ -1,21 +1,21 @@
 const { pool } = require('../config/db');
 
 //crear valoración
-async function createRating({
-  trip_id,
-  rater_user_id,
-  rated_user_id,
-  rating_value,
-  comment = null
-}) {
-  const [result] = await pool.query(
-    `INSERT INTO ratings 
-     (trip_id, rater_user_id, rated_user_id, rating_value, comment)
-     VALUES (?, ?, ?, ?, ?)`,
-    [trip_id, rater_user_id, rated_user_id, rating_value, comment]
-  );
+async function createRating({ trip_id, rater_user_id, rated_user_id, rating_value, comment = null }) {
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO ratings 
+        (trip_id, rater_user_id, rated_user_id, rating_value, comment)
+        VALUES (?, ?, ?, ?, ?)`,
+      [trip_id, rater_user_id, rated_user_id, rating_value, comment]
+    );
 
-  return result.insertId;
+    return result.insertId;
+
+  } catch (err) {
+    console.error("ERROR EN createRating:", err);
+    throw err;
+  }
 }
 
 //obtener valoración por ID

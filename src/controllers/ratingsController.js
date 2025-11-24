@@ -9,7 +9,8 @@ const {
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
   try {
-    const userId = req.user?.user_id; // viene del authMiddleware
+    console.log("REQ.USER ES:", req.user);
+    const userId = req.user?.id; // viene del authMiddleware
     const { trip_id, rated_user_id, rating_value, comment } = req.body;
 
  

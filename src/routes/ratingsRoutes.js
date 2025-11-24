@@ -8,10 +8,10 @@ const {
   getRatingsForTrip
 } = require('../controllers/ratingsController');
 
-const authMiddleware = require('../middlewares/authMiddleware');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 // Crear valoración → requiere autenticación
-router.post('/', authMiddleware, createRatingController);
+router.post('/', authenticateToken, createRatingController);
 
 // Obtener valoraciones recibidas por un usuario
 router.get('/user/:userId', getRatingsForUser);
