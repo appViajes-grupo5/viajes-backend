@@ -109,5 +109,5 @@ module.exports = {
   getAllTrips,
   getTripsByUser,
   updateTrip,
-  deleteTrip,
+  deleteTrip
 };

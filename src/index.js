@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const tripCommentsRoutes = require('./routes/tripCommentsRoutes');
 const notificationsRoutes = require('./routes/notificationsRoutes');
+const participantRoutes = require('./routes/participantRoutes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/trip-comments', tripCommentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/participants', participantRoutes);
 
 const PORT = process.env.PORT || 4000;
 
