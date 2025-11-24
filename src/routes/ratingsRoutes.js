@@ -8,19 +8,19 @@ const {
   getRatingsForTrip
 } = require('../controllers/ratingsController');
 
-//POST requiere autenticación
-const authMiddleware = require('../middleware/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-//Crear valoración
+// Crear valoración → requiere autenticación
 router.post('/', authMiddleware, createRatingController);
 
-//Obtener una valoración por ID
-router.get('/:id', getRating);
-
-//Obtener valoraciones recibidas por un usuario
+// Obtener valoraciones recibidas por un usuario
 router.get('/user/:userId', getRatingsForUser);
 
-//Obtener valoraciones asociadas a un viaje
+// Obtener valoraciones de un viaje
 router.get('/trip/:tripId', getRatingsForTrip);
 
+// Obtener valoración por ID
+router.get('/:id', getRating);
+
 module.exports = router;
+
