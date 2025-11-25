@@ -1,6 +1,6 @@
 const Trip = require('../models/tripModel');
 
-// --- GESTIÓN DE VIAJES (Código base optimizado) ---
+// GESTIÓN DE VIAJES
 
 // Obtener todos los viajes
 async function getTrips(req, res) {
@@ -28,15 +28,54 @@ async function getTrip(req, res) {
 //crear nuevo viaje
 async function createTrip(req, res) {
   try {
-    // Nota: creator_id debería venir idealmente de req.user.id si usáis autenticación JWT
-    const { creator_id, title, destination, start_date, end_date, estimated_cost, min_participants, transport_details, itinerary, } = req.body;
+    const creator_id = req.user.id; //ID del usuario q crea el viaje
+    //datos enviados por el usuario
+    const { 
+      title,
+      description,
+      destination,
+      start_date,
+      end_date,
+      estimated_cost,
+      min_participants,
+      transport_details,
+      itinerary
+    } = req.body;
 
-    // validación
-    if (!creator_id || !title || !destination || !start_date || !end_date) {
-      return res.status(400).json({ error: "Faltan campos obligatorios (creator_id, title, destination, fechas)" });
-    }
+       //validación gral  
+      if (!title || !description || !destination || !start_date || !end_date) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+      }
 
-    const newTripId = await Trip.crearTrip(req.body);
+      //validación fechas
+      if (new Date(start_date) >= new Date(end_date)) {
+        return res.status(400).json({ error: "La fecha de inicio debe ser anterioor a la fecha de fin" });
+      }
+
+      //validación minim participantes
+      if (min_participants !== undefined && min_participants < 1) {
+        return res.status(400).json({ error: "El mínimo de participantes debe ser 1 o más" });
+      }
+
+      //validación coste estimado
+      if (estimated_cost !== undefined && estimated_cost < 0) {
+      return res.status(400).json({ error: "El coste estimado no puede ser negativo" });
+      }
+
+  //objeto final con todos los datos del viaje
+    const tripData = {
+      creator_id,
+      title,
+      description,
+      destination,
+      start_date,
+      end_date,
+      estimated_cost,
+      min_participants,
+      transport_details,
+      itinerary
+    };  
+    const newTripId = await Trip.crearTrip(tripData);;
     res.status(201).json({ message: "Viaje creado", trip_id: newTripId });
 
   } catch (err) {
