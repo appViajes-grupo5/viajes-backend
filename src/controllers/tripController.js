@@ -89,7 +89,16 @@ async function updateTrip(req, res) {
   try {
     const tripId = req.params.id;
     const data = req.body;
+    const trip = await Trip.getTripById(tripId);
 
+    if (!trip) {
+    return res.status(404).json({ error: "Viaje no encontrado" });
+    }
+
+    //solo puede editarlo el creador
+    if (trip.creator_id !== req.user.id) {
+      return res.status(403).json({ error: "No tienes permiso para modificar este viaje" });
+    }
     // validación
     if (!data || Object.keys(data).length === 0) {
       return res.status(400).json({ error: "No se han recibido datos para actualizar" });
