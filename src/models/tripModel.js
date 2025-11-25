@@ -50,7 +50,34 @@ async function getTripById(tripId) {
     [tripId]
   );
 
-  return rows[0] || null;
+  const trip = rows[0];
+  if (!trip) return null;
+
+  //obtener datos del creador
+  const [creatorRows] = await pool.query(
+    `SELECT first_name, last_name 
+     FROM users 
+     WHERE user_id = ?`,
+    [trip.creator_id]
+  );
+
+  if (creatorRows.length > 0) {
+    trip.creator_first_name = creatorRows[0].first_name;
+    trip.creator_last_name = creatorRows[0].last_name;
+  }
+
+  //contar participantes aprobados
+  const [countRows] = await pool.query(
+    `SELECT COUNT(*) AS participant_count
+     FROM trip_participants
+     WHERE trip_id = ? AND status = 'approved'`,
+    [tripId]
+  );
+
+  trip.participant_count = countRows[0].participant_count || 0;
+
+  return trip;;
+
 }
 
 //listar todos los viajes
