@@ -9,16 +9,21 @@ const {
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
   try {
-    console.log("REQ.USER ES:", req.user);
     const userId = req.user?.id; // viene del authMiddleware
     const { trip_id, rated_user_id, rating_value, comment } = req.body;
 
  
     if (!trip_id || !rated_user_id || !rating_value) {
       return res.status(400).json({
-        error: "Faltan campos obligatorios (trip_id, rated_user_id, rating_value)"
+        error: "Faltan campos obligatorios"
       });
     }
+        // validar rango de valoración
+    if (rating_value < 1 || rating_value > 5) {
+      return res.status(400).json({
+        error: "La valoración debe estar entre 1 y 5"
+      });
+      }
 
     //crear valoracion
     const newRatingId = await createRating({
