@@ -6,6 +6,7 @@ async function getTopics(req, res) {
     const topics = await Forum.getAllTopics();
     res.json(topics);
   } catch (err) {
+    console.error('Error cargando el foro:', err);
     res.status(500).json({ error: 'Error cargando el foro' });
   }
 }
@@ -21,6 +22,7 @@ async function createTopic(req, res) {
     const id = await Forum.createTopic(userId, title, content, category);
     res.status(201).json({ message: 'Tema creado', topicId: id });
   } catch (err) {
+    console.error('Error creando tema en el foro:', err);
     res.status(500).json({ error: 'Error creando tema' });
   }
 }
@@ -33,9 +35,10 @@ async function getTopicDetail(req, res) {
     if (!topic) return res.status(404).json({ error: 'Tema no encontrado' });
 
     const replies = await Forum.getRepliesByTopic(id);
-    
+
     res.json({ ...topic, replies }); // Devolvemos todo junto
   } catch (err) {
+    console.error('Error cargando detalle del foro:', err);
     res.status(500).json({ error: 'Error cargando detalle' });
   }
 }
@@ -54,6 +57,7 @@ async function replyToTopic(req, res) {
     const replies = await Forum.getRepliesByTopic(id);
     res.status(201).json(replies);
   } catch (err) {
+    console.error('Error enviando respuesta al foro:', err);
     res.status(500).json({ error: 'Error enviando respuesta' });
   }
 }
