@@ -5,6 +5,7 @@ const {
   getRatingsByTrip
 } = require('../models/ratingsModel');
 
+const { getTripById } = require('../models/tripsModel');
 
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
@@ -40,6 +41,14 @@ async function createRatingController(req, res) {
         error: "La valoración debe estar entre 1 y 5"
       });
       }
+
+      // Comprobar que el viaje existe
+    const trip = await getTripById(trip_id);
+    if (!trip) {
+      return res.status(404).json({
+     error: "El viaje indicado no existe"
+      });
+    }
 
     //crear valoracion
     const newRatingId = await createRating({
