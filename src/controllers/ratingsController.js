@@ -6,6 +6,7 @@ const {
 } = require('../models/ratingsModel');
 
 const { getTripById } = require('../models/tripsModel');
+const { getParticipant } = require('../models/participantModel');
 
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
