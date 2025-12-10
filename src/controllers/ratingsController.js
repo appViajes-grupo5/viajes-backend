@@ -2,15 +2,33 @@ const {
   createRating,
   getRatingById,
   getRatingsByUser,
-  getRatingsByTrip
+  getRatingsByTrip,
+  getRatingByTripAndUsers,
 } = require('../models/ratingsModel');
 
+const { getTripById } = require('../models/tripsModel');
+const { getParticipant } = require('../models/participantModel');
 
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
   try {
     const userId = req.user?.id; // viene del authMiddleware
     const { trip_id, rated_user_id, rating_value, comment } = req.body;
+
+          // asegurar que rating_value es número
+    const numericRating = Number(rating_value);
+    if (isNaN(numericRating)) {
+      return res.status(400).json({
+      error: "La valoración debe ser un número"
+     });
+    }
+
+      // evitar que un usuario se valore a símismo
+    if (Number(rated_user_id) === Number(userId)) {
+      return res.status(400).json({
+       error: "No puedes valorarte a ti mismo"
+      });
+    }
 
  
     if (!trip_id || !rated_user_id || !rating_value) {
@@ -19,18 +37,51 @@ async function createRatingController(req, res) {
       });
     }
         // validar rango de valoración
-    if (rating_value < 1 || rating_value > 5) {
+    if (numericRating < 1 || numericRating > 5) {
+
       return res.status(400).json({
         error: "La valoración debe estar entre 1 y 5"
       });
       }
 
-    //crear valoracion
+      // Comprobar que el viaje existe
+    const trip = await getTripById(trip_id);
+    if (!trip) {
+      return res.status(404).json({
+     error: "El viaje indicado no existe"
+      });
+    }
+
+    // comprobar que el creador de la valoración participó en el viaje
+    const rater = await getParticipant(trip_id, userId);
+    if (!rater || rater.status !== 'approved') {
+      return res.status(400).json({
+        error: "Solo puedes valorar a usuarios que participaron contigo en el viaje"
+      });
+    }
+
+    // comprobar que el usuario valorado también participó en el viaje
+    const rated = await getParticipant(trip_id, rated_user_id);
+    if (!rated || rated.status !== 'approved') {
+      return res.status(400).json({
+        error: "No puedes valorar a un usuario que no participó en este viaje"
+      });
+    }
+
+    // Comprobar si ya existe una valoración del mismo usuario en este viaje
+    const existingRating = await getRatingByTripAndUsers(trip_id, userId, rated_user_id);
+    if (existingRating) {
+      return res.status(409).json({
+        error: "Ya has valorado a este usuario en este viaje"
+      });
+    }
+
+    //crear valoración
     const newRatingId = await createRating({
       trip_id,
       rater_user_id: userId,
       rated_user_id,
-      rating_value,
+      rating_value:numericRating,
       comment
     });
 
