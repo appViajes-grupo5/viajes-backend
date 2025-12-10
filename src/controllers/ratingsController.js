@@ -12,6 +12,21 @@ async function createRatingController(req, res) {
     const userId = req.user?.id; // viene del authMiddleware
     const { trip_id, rated_user_id, rating_value, comment } = req.body;
 
+          // asegurar que rating_value es número
+    const numericRating = Number(rating_value);
+    if (isNaN(numericRating)) {
+      return res.status(400).json({
+      error: "La valoración debe ser un número"
+     });
+    }
+
+      // evitar que un usuario se valore a símismo
+    if (Number(rated_user_id) === Number(userId)) {
+      return res.status(400).json({
+       error: "No puedes valorarte a ti mismo"
+      });
+    }
+
  
     if (!trip_id || !rated_user_id || !rating_value) {
       return res.status(400).json({
@@ -19,7 +34,8 @@ async function createRatingController(req, res) {
       });
     }
         // validar rango de valoración
-    if (rating_value < 1 || rating_value > 5) {
+    if (numericRating < 1 || numericRating > 5) {
+
       return res.status(400).json({
         error: "La valoración debe estar entre 1 y 5"
       });
@@ -30,7 +46,7 @@ async function createRatingController(req, res) {
       trip_id,
       rater_user_id: userId,
       rated_user_id,
-      rating_value,
+      rating_value:numericRating,
       comment
     });
 
