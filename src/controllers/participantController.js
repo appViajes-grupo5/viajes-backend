@@ -1,12 +1,25 @@
 const Participant = require('../models/participantModel');
+const Trip = require('../models/tripModel');
 
 // 1. Unirse a un viaje
 async function joinTrip(req, res) {
-  const { tripId, userId } = req.body; // OJO: Ahora tripId viene en el body si cambiamos la ruta
+  const { tripId } = req.body;
+  const userId = req.user.id; // ¡SEGURO! Viene del token, no del body
 
-  if (!tripId || !userId) return res.status(400).json({ error: "Faltan datos" });
+  if (!tripId) return res.status(400).json({ error: "Faltan datos (tripId)" });
 
   try {
+    // Opcional: Verificar que el viaje existe antes de intentar unirse
+    const trip = await Trip.getTripById(tripId);
+    if (!trip) {
+      return res.status(404).json({ error: 'Viaje no encontrado' });
+    }
+
+    // Verificar si el usuario es el creador (el creador no debería necesitar unirse a su propio viaje)
+    if (trip.creator_id === userId) {
+        return res.status(400).json({ error: 'Eres el creador del viaje, ya estás dentro.' });
+    }
+
     const existing = await Participant.getParticipant(tripId, userId);
     if (existing) {
       return res.status(409).json({ error: 'Ya has solicitado unirte a este viaje' });
@@ -32,15 +45,38 @@ async function getTripParticipants(req, res) {
   }
 }
 
-// 3. Actualizar estado
+// 3. Actualizar estado (Solo el CREADOR del viaje puede hacer esto)
 async function updateParticipantStatus(req, res) {
-  const { tripId, userId, status } = req.body; 
+  // targetUserId es el usuario al que vamos a aceptar/rechazar
+  const { tripId, userId: targetUserId, status } = req.body; 
+  const requesterId = req.user.id; // El usuario que intenta hacer la acción debe ser el creador
 
-  if (!tripId || !userId || !status) return res.status(400).json({ error: "Faltan datos" });
+  if (!tripId || !targetUserId || !status) {
+    return res.status(400).json({ error: "Faltan datos (tripId, userId, status)" });
+  }
+
+  // Validar estados permitidos
+  const validStatuses = ['approved', 'rejected', 'pending'];
+  if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Estado no válido" });
+  }
 
   try {
-    await Participant.updateParticipantStatus(tripId, userId, status);
+    // 1. Buscar el viaje para ver quién es el creador
+    const trip = await Trip.getTripById(tripId);
+    if (!trip) {
+      return res.status(404).json({ error: "Viaje no encontrado" });
+    }
+
+    // 2. Comprobar permisos
+    if (trip.creator_id !== requesterId) {
+      return res.status(403).json({ error: "No tienes permiso para gestionar participantes en este viaje" });
+    }
+
+    // 3. Ejecutar actualización
+    await Participant.updateParticipantStatus(tripId, targetUserId, status);
     res.json({ message: `Participante ${status} correctamente` });
+
   } catch (err) {
     console.error("Error en updateParticipantStatus:", err);
     res.status(500).json({ error: 'Error actualizando estado' });
@@ -49,9 +85,10 @@ async function updateParticipantStatus(req, res) {
 
 // 4. Salir
 async function leaveTrip(req, res) {
-  const { tripId, userId } = req.body;
+  const { tripId } = req.body;
+  const userId = req.user.id; // ¡SEGURO! Viene del token
 
-  if (!tripId || !userId) return res.status(400).json({ error: "Faltan datos" });
+  if (!tripId) return res.status(400).json({ error: "Faltan datos (tripId)" });
 
   try {
     await Participant.removeParticipant(tripId, userId);
