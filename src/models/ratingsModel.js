@@ -54,9 +54,21 @@ async function getRatingsByTrip(tripId) {
   return rows;
 }
 
+async function getRatingByTripAndUsers(trip_id, rater_user_id, rated_user_id) {
+  const [rows] = await pool.query(
+    `SELECT rating_id
+     FROM ratings
+     WHERE trip_id = ? AND rater_user_id = ? AND rated_user_id = ?`,
+    [trip_id, rater_user_id, rated_user_id]
+  );
+
+  return rows[0] || null;
+}
+
 module.exports = {
   createRating,
   getRatingById,
   getRatingsByUser,
-  getRatingsByTrip
+  getRatingsByTrip,
+  getRatingByTripAndUsers
 };

@@ -2,7 +2,8 @@ const {
   createRating,
   getRatingById,
   getRatingsByUser,
-  getRatingsByTrip
+  getRatingsByTrip,
+  getRatingByTripAndUsers,
 } = require('../models/ratingsModel');
 
 const { getTripById } = require('../models/tripsModel');
@@ -64,6 +65,14 @@ async function createRatingController(req, res) {
     if (!rated || rated.status !== 'approved') {
       return res.status(400).json({
         error: "No puedes valorar a un usuario que no participó en este viaje"
+      });
+    }
+
+    // Comprobar si ya existe una valoración del mismo usuario en este viaje
+    const existingRating = await getRatingByTripAndUsers(trip_id, userId, rated_user_id);
+    if (existingRating) {
+      return res.status(409).json({
+        error: "Ya has valorado a este usuario en este viaje"
       });
     }
 
