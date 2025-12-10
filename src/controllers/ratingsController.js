@@ -51,7 +51,23 @@ async function createRatingController(req, res) {
       });
     }
 
-    //crear valoracion
+    // comprobar que el creador de la valoración participó en el viaje
+    const rater = await getParticipant(trip_id, userId);
+    if (!rater || rater.status !== 'approved') {
+      return res.status(400).json({
+        error: "Solo puedes valorar a usuarios que participaron contigo en el viaje"
+      });
+    }
+
+    // comprobar que el usuario valorado también participó en el viaje
+    const rated = await getParticipant(trip_id, rated_user_id);
+    if (!rated || rated.status !== 'approved') {
+      return res.status(400).json({
+        error: "No puedes valorar a un usuario que no participó en este viaje"
+      });
+    }
+
+    //crear valoración
     const newRatingId = await createRating({
       trip_id,
       rater_user_id: userId,
