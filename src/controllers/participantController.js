@@ -1,5 +1,8 @@
 const Participant = require('../models/participantModel');
 const Trip = require('../models/tripModel');
+// Nuevas importaciones para el envío de correos y obtención de datos de usuario
+const User = require('../models/userModel');
+const { sendEmail } = require('../services/emailService');
 
 // 1. Unirse a un viaje
 async function joinTrip(req, res) {
@@ -75,6 +78,27 @@ async function updateParticipantStatus(req, res) {
 
     // 3. Ejecutar actualización
     await Participant.updateParticipantStatus(tripId, targetUserId, status);
+
+    // 4. ENVÍO DE EMAIL
+    // Si el estado es 'approved', notificamos al usuario por correo
+    if (status === 'approved') {
+        try {
+            const participantUser = await User.getUserById(targetUserId);
+            
+            // Verificamos que el usuario existe y tiene email
+            if (participantUser && participantUser.email) {
+                await sendEmail(
+                    participantUser.email,
+                    '¡Has sido aceptado en un viaje!',
+                    `Hola ${participantUser.first_name}, el creador del viaje "${trip.title}" ha aceptado tu solicitud. Entra en la app para ver los detalles y contactar con el grupo.`
+                );
+            }
+        } catch (emailErr) {
+            // Solo logueamos el error del email para no fallar toda la petición http
+            console.error("Error enviando email de aceptación:", emailErr);
+        }
+    }
+
     res.json({ message: `Participante ${status} correctamente` });
 
   } catch (err) {
