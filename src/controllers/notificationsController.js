@@ -31,16 +31,26 @@ async function listByUser(req, res) {
 
 async function markRead(req, res) {
   const { notification_id } = req.params;
+  const userId = req.user.id; // Obtenemos el ID del usuario autenticado
 
   try {
-    const updated = await Notifications.markAsRead(notification_id);
+    // 1. Primero obtenemos la notificación para ver de quién es
+    const notification = await Notifications.getNotificationById(notification_id);
 
-    if (!updated) {
+    if (!notification) {
       return res.status(404).json({ error: 'Notificación no encontrada' });
     }
 
+    // 2. Verificamos propiedad
+    if (notification.user_id !== userId) {
+      return res.status(403).json({ error: 'No tienes permiso para modificar esta notificación' });
+    }
+
+    // 3. Procedemos
+    await Notifications.markAsRead(notification_id);
     const updatedNotification = await Notifications.getNotificationById(notification_id);
     res.json(updatedNotification);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al marcar como leída' });
@@ -49,15 +59,22 @@ async function markRead(req, res) {
 
 async function remove(req, res) {
   const { notification_id } = req.params;
+  const userId = req.user.id;
 
   try {
-    const deleted = await Notifications.deleteNotification(notification_id);
-
-    if (!deleted) {
+    const notification = await Notifications.getNotificationById(notification_id);
+    
+    if (!notification) {
       return res.status(404).json({ error: 'Notificación no encontrada' });
     }
 
+    if (notification.user_id !== userId) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar esta notificación' });
+    }
+
+    await Notifications.deleteNotification(notification_id);
     res.json({ message: 'Notificación eliminada' });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al eliminar la notificación' });
