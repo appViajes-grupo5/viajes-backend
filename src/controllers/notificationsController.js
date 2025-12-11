@@ -17,8 +17,8 @@ async function create(req, res) {
   }
 }
 
-async function listByUser(req, res) {
-  const { user_id } = req.params;
+async function getMyNotifications(req, res) {
+  const user_id = req.user.id;
 
   try {
     const notifications = await Notifications.getNotificationsByUser(user_id);
@@ -72,7 +72,7 @@ async function remove(req, res) {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta notificación' });
     }
 
-    await Notifications.deleteNotification(notification_id);
+    const deleted = await Notifications.deleteNotification(notification_id);
     res.json({ message: 'Notificación eliminada' });
 
   } catch (err) {
@@ -83,7 +83,7 @@ async function remove(req, res) {
 
 module.exports = {
   create,
-  listByUser,
+  getMyNotifications,
   markRead,
   remove
 };
