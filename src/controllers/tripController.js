@@ -96,7 +96,7 @@ async function updateTrip(req, res) {
     }
 
     //solo puede editarlo el creador
-    if (trip.creator_id !== req.user.id) {
+    if (Number(trip.creator_id) !== Number(req.user.id)) {
       return res.status(403).json({ error: "No tienes permiso para modificar este viaje" });
     }
     // validación
@@ -133,7 +133,7 @@ async function deleteTrip(req, res) {
     }
 
     //solo puede borrarlo el creador
-    if (trip.creator_id !== req.user.id) {
+    if (Number(trip.creator_id) !== Number(req.user.id)) {
       return res.status(403).json({ error: "No tienes permiso para eliminar este viaje" });
     }
 
