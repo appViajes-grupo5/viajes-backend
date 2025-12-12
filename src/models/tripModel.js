@@ -13,13 +13,7 @@ async function crearTrip({
   transport_details = null,
   itinerary = null,
 }) {
-
-
-  const fechaInicio = start_date;
-  const fechaFin = end_date;
-
-
-  const [result] = await pool.query(
+const [result] = await pool.query(
     `INSERT INTO trips 
       (creator_id, title, description, destination, start_date, end_date, estimated_cost, min_participants, transport_details, itinerary)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -28,8 +22,8 @@ async function crearTrip({
       title,
       description,
       destination,
-      fechaInicio,
-      fechaFin,
+      start_date,
+      end_date,
       estimated_cost,
       min_participants,
       transport_details,
@@ -37,7 +31,7 @@ async function crearTrip({
     ]
   );
 
-  return result.insertId; //id del nuevo viaje
+  return result.insertId;
 }
 
 //devuelve viaje por su id
@@ -53,9 +47,10 @@ async function getTripById(tripId) {
   const trip = rows[0];
   if (!trip) return null;
 
-  //obtener datos del creador
+  // Obtener datos del creador, INCLUYENDO contacto (email, phone)
+  // En el frontend se decidirá si mostrarlos basándose en si el usuario está aceptado.
   const [creatorRows] = await pool.query(
-    `SELECT first_name, last_name 
+    `SELECT first_name, last_name, email, phone, profile_picture_url 
      FROM users 
      WHERE user_id = ?`,
     [trip.creator_id]
@@ -64,6 +59,9 @@ async function getTripById(tripId) {
   if (creatorRows.length > 0) {
     trip.creator_first_name = creatorRows[0].first_name;
     trip.creator_last_name = creatorRows[0].last_name;
+    trip.creator_email = creatorRows[0].email;
+    trip.creator_phone = creatorRows[0].phone;
+    trip.creator_avatar = creatorRows[0].profile_picture_url;
   }
 
   //contar participantes aprobados
@@ -77,7 +75,6 @@ async function getTripById(tripId) {
   trip.participant_count = countRows[0].participant_count || 0;
 
   return trip;;
-
 }
 
 //listar todos los viajes
@@ -112,13 +109,12 @@ async function updateTrip(tripId, data) {
     values.push(data[key]);
   }
 
-
   const sql = `UPDATE trips SET ${fields.join(', ')} WHERE trip_id = ?`;
   values.push(tripId);
 
   const [result] = await pool.query(sql, values);
 
-  return result.affectedRows > 0; //true si se actualizó
+  return result.affectedRows > 0;
 }
 
 //borrar viaje

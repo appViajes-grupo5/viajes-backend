@@ -19,9 +19,11 @@ async function addParticipant(tripId, userId) {
 }
 
 // READ: Ver participantes
+// Se añaden email y phone a la consulta
 async function getParticipantsByTripId(tripId) {
   const [rows] = await pool.query(
-    `SELECT tp.participant_id, tp.status, u.user_id, u.first_name, u.last_name, u.profile_picture_url
+    `SELECT tp.participant_id, tp.status, 
+            u.user_id, u.first_name, u.last_name, u.email, u.phone, u.profile_picture_url
      FROM trip_participants tp
      JOIN users u ON tp.user_id = u.user_id
      WHERE tp.trip_id = ?`,
