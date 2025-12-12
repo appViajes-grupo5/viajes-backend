@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const tripCommentsController = require('../controllers/tripCommentsController');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+
+router.use(authMiddleware);
 
 router.get('/:trip_id', tripCommentsController.list);
 

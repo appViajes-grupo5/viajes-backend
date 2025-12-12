@@ -1,4 +1,5 @@
 const TripComments = require('../models/tripCommentsModel');
+const Participant = require('../models/participantModel');
 
 async function create(req, res) {
   const { trip_id, comment_text } = req.body;
@@ -9,6 +10,14 @@ async function create(req, res) {
   }
 
   try {
+    //Validar que el usuario es participante ACEPTADO del viaje
+    const participant = await Participant.getParticipant(trip_id, user_id);
+    
+    // Si no existe registro o el estado no es 'approved' (asumiendo que ese es el status de aceptado)
+    if (!participant || participant.status !== 'approved') {
+        return res.status(403).json({ error: 'Solo los participantes aceptados pueden comentar en este viaje' });
+    }
+
     const commentId = await TripComments.createComment(trip_id, user_id, comment_text);
     const newComment = await TripComments.getCommentById(commentId);
 
