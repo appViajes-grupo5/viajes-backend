@@ -6,7 +6,7 @@ const {
   getRatingByTripAndUsers,
 } = require('../models/ratingsModel');
 
-const { getTripById } = require('../models/tripsModel');
+const { getTripById } = require('../models/tripModel');
 const { getParticipant } = require('../models/participantModel');
 
 //crear valoración POST – requiere auth
