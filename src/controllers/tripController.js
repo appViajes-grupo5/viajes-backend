@@ -42,7 +42,7 @@ async function createTrip(req, res) {
 
     // NOTA: Asumimos que la validación de datos (fechas, campos obligatorios, etc.)
     // ya ha sido realizada por el middleware de Zod antes de llegar aquí.
-    
+
     // Construimos el objeto final
     const tripData = {
       creator_id,
@@ -50,10 +50,10 @@ async function createTrip(req, res) {
     };
 
     const newTripId = await Trip.crearTrip(tripData);
-    
-    res.status(201).json({ 
-      message: "Viaje creado exitosamente", 
-      trip_id: newTripId 
+
+    res.status(201).json({
+      message: "Viaje creado exitosamente",
+      trip_id: newTripId
     });
 
   } catch (err) {
@@ -69,7 +69,7 @@ async function updateTrip(req, res) {
   try {
     const tripId = req.params.id;
     const data = req.body;
-    
+
     // 1. Verificar que el viaje existe
     const trip = await Trip.getTripById(tripId);
 
@@ -78,7 +78,7 @@ async function updateTrip(req, res) {
     }
 
     // 2. Verificar permisos (Solo el creador puede editar)
-    if (trip.creator_id !== req.user.id) {
+    if (Number(trip.creator_id) !== Number(req.user.id)) {
       return res.status(403).json({ error: "No tienes permiso para modificar este viaje" });
     }
 
@@ -109,7 +109,7 @@ async function updateTrip(req, res) {
 async function deleteTrip(req, res) {
   try {
     const tripId = req.params.id;
-    
+
     // 1. Verificar que el viaje existe
     const trip = await Trip.getTripById(tripId);
 
@@ -118,7 +118,7 @@ async function deleteTrip(req, res) {
     }
 
     // 2. Verificar permisos (Solo el creador puede borrar)
-    if (trip.creator_id !== req.user.id) {
+    if (Number(trip.creator_id) !== Number(req.user.id)) {
       return res.status(403).json({ error: "No tienes permiso para eliminar este viaje" });
     }
 
