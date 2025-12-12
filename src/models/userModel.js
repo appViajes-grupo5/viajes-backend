@@ -10,7 +10,7 @@ async function crearUsuario(email, password_hash, first_name, last_name = null, 
 
 async function getUserById(userId) {
   const [rows] = await pool.query(
-    'SELECT user_id, email, first_name, last_name, phone, bio, interests, profile_picture_url, average_rating, created_at FROM users WHERE user_id = ?',
+    'SELECT user_id, email, first_name, last_name, phone, bio, interests, profile_picture_url, average_rating, created_at, confirmed FROM users WHERE user_id = ?',
     [userId]
   );
   return rows[0] || null;
@@ -18,10 +18,22 @@ async function getUserById(userId) {
 
 async function getUserByEmail(email) {
   const [rows] = await pool.query(
-    'SELECT user_id, email, password_hash, first_name, last_name, phone, bio, interests, profile_picture_url, average_rating, created_at FROM users WHERE email = ?',
+    'SELECT user_id, email, password_hash, first_name, last_name, phone, bio, interests, profile_picture_url, average_rating, created_at, confirmed FROM users WHERE email = ?',
     [email]
   );
   return rows[0] || null;
+}
+
+/**
+ * Confirma la cuenta de un usuario
+ * @param {number} userId - ID del usuario
+ */
+async function confirmUser(userId) {
+  await pool.query(
+    'UPDATE users SET confirmed = 1 WHERE user_id = ?',
+    [userId]
+  );
+  return await getUserById(userId);
 }
 
 async function updateUser(userId, updateData) {
@@ -82,5 +94,6 @@ module.exports = {
   crearUsuario,
   getUserByEmail,
   getUserById,
-  updateUser
+  updateUser,
+  confirmUser
 };
