@@ -8,7 +8,19 @@ async function getTrips(req, res) {
     const trips = await Trip.getAllTrips();
     res.json(trips);
   } catch (err) {
-    console.error("Error en getTrips:", err);
+    console.error('Error en getTrips:', err);
+    res.status(500).json({ error: 'Error obteniendo viajes' });
+  }
+}
+
+async function getMyTrips(req, res) {
+  const user_id = req.user.id;
+  console.log('user', user_id);
+  try {
+    const trips = await Trip.getTripsByUser(user_id);
+    res.json(trips);
+  } catch (err) {
+    console.error('Error en getTrips:', err);
     res.status(500).json({ error: 'Error obteniendo viajes' });
   }
 }
@@ -20,7 +32,7 @@ async function getTrip(req, res) {
     if (!trip) return res.status(404).json({ error: 'Viaje no encontrado' });
     res.json(trip);
   } catch (err) {
-    console.error("Error en getTrip:", err);
+    console.error('Error en getTrip:', err);
     res.status(500).json({ error: 'Error obteniendo viaje' });
   }
 }
@@ -39,27 +51,35 @@ async function createTrip(req, res) {
       estimated_cost,
       min_participants,
       transport_details,
-      itinerary
+      itinerary,
     } = req.body;
 
-    //validación gral  
+    //validación gral
     if (!title || !description || !destination || !start_date || !end_date) {
-      return res.status(400).json({ error: "Faltan campos obligatorios" });
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
     //validación fechas
     if (new Date(start_date) >= new Date(end_date)) {
-      return res.status(400).json({ error: "La fecha de inicio debe ser anterioor a la fecha de fin" });
+      return res
+        .status(400)
+        .json({
+          error: 'La fecha de inicio debe ser anterioor a la fecha de fin',
+        });
     }
 
     //validación minim participantes
     if (min_participants !== undefined && min_participants < 1) {
-      return res.status(400).json({ error: "El mínimo de participantes debe ser 1 o más" });
+      return res
+        .status(400)
+        .json({ error: 'El mínimo de participantes debe ser 1 o más' });
     }
 
     //validación coste estimado
     if (estimated_cost !== undefined && estimated_cost < 0) {
-      return res.status(400).json({ error: "El coste estimado no puede ser negativo" });
+      return res
+        .status(400)
+        .json({ error: 'El coste estimado no puede ser negativo' });
     }
 
     //objeto final con todos los datos del viaje
@@ -73,14 +93,13 @@ async function createTrip(req, res) {
       estimated_cost,
       min_participants,
       transport_details,
-      itinerary
+      itinerary,
     };
-    const newTripId = await Trip.crearTrip(tripData);;
-    res.status(201).json({ message: "Viaje creado", trip_id: newTripId });
-
+    const newTripId = await Trip.crearTrip(tripData);
+    res.status(201).json({ message: 'Viaje creado', trip_id: newTripId });
   } catch (err) {
-    console.error("Error en createTrip:", err);
-    res.status(500).json({ error: "Error creando viaje" });
+    console.error('Error en createTrip:', err);
+    res.status(500).json({ error: 'Error creando viaje' });
   }
 }
 
@@ -92,16 +111,20 @@ async function updateTrip(req, res) {
     const trip = await Trip.getTripById(tripId);
 
     if (!trip) {
-      return res.status(404).json({ error: "Viaje no encontrado" });
+      return res.status(404).json({ error: 'Viaje no encontrado' });
     }
 
     //solo puede editarlo el creador
     if (trip.creator_id !== req.user.id) {
-      return res.status(403).json({ error: "No tienes permiso para modificar este viaje" });
+      return res
+        .status(403)
+        .json({ error: 'No tienes permiso para modificar este viaje' });
     }
     // validación
     if (!data || Object.keys(data).length === 0) {
-      return res.status(400).json({ error: "No se han recibido datos para actualizar" });
+      return res
+        .status(400)
+        .json({ error: 'No se han recibido datos para actualizar' });
     }
 
     // Eliminamos campos que no deberían actualizarse manualmente si vienen en el body
@@ -111,14 +134,15 @@ async function updateTrip(req, res) {
     const actualizado = await Trip.updateTrip(tripId, data);
 
     if (!actualizado) {
-      return res.status(404).json({ error: "Viaje no encontrado o no se realizaron cambios" });
+      return res
+        .status(404)
+        .json({ error: 'Viaje no encontrado o no se realizaron cambios' });
     }
 
-    res.json({ message: "Viaje actualizado correctamente" });
-
+    res.json({ message: 'Viaje actualizado correctamente' });
   } catch (err) {
-    console.error("Error en updateTrip:", err);
-    res.status(500).json({ error: "Error al actualizar viaje" });
+    console.error('Error en updateTrip:', err);
+    res.status(500).json({ error: 'Error al actualizar viaje' });
   }
 }
 
@@ -129,25 +153,26 @@ async function deleteTrip(req, res) {
     const trip = await Trip.getTripById(tripId);
 
     if (!trip) {
-      return res.status(404).json({ error: "Viaje no encontrado" });
+      return res.status(404).json({ error: 'Viaje no encontrado' });
     }
 
     //solo puede borrarlo el creador
     if (trip.creator_id !== req.user.id) {
-      return res.status(403).json({ error: "No tienes permiso para eliminar este viaje" });
+      return res
+        .status(403)
+        .json({ error: 'No tienes permiso para eliminar este viaje' });
     }
 
     const borrado = await Trip.deleteTrip(tripId);
 
     if (!borrado) {
-      return res.status(404).json({ error: "Viaje no encontrado" });
+      return res.status(404).json({ error: 'Viaje no encontrado' });
     }
 
-    res.json({ message: "Viaje eliminado correctamente" });
-
+    res.json({ message: 'Viaje eliminado correctamente' });
   } catch (err) {
-    console.error("Error en deleteTrip:", err);
-    res.status(500).json({ error: "Error al eliminar viaje" });
+    console.error('Error en deleteTrip:', err);
+    res.status(500).json({ error: 'Error al eliminar viaje' });
   }
 }
 
@@ -156,5 +181,6 @@ module.exports = {
   getTrip,
   createTrip,
   updateTrip,
-  deleteTrip
+  deleteTrip,
+  getMyTrips,
 };
