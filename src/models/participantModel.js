@@ -3,7 +3,7 @@ const { pool } = require('../config/db');
 // Helper: Verificar si ya existe
 async function getParticipant(tripId, userId) {
   const [rows] = await pool.query(
-    'SELECT * FROM trip_participants WHERE trip_id = ? AND user_id = ?', 
+    'SELECT * FROM trip_participants WHERE trip_id = ? AND user_id = ?',
     [tripId, userId]
   );
   return rows[0];
@@ -12,7 +12,7 @@ async function getParticipant(tripId, userId) {
 // CREATE: Unirse
 async function addParticipant(tripId, userId) {
   const [result] = await pool.query(
-    'INSERT INTO trip_participants (trip_id, user_id, status) VALUES (?, ?, "pending")',
+    "INSERT INTO trip_participants (trip_id, user_id, status) VALUES (?, ?, 'pending')",
     [tripId, userId]
   );
   return result;
@@ -24,7 +24,7 @@ async function getParticipantsByTripId(tripId) {
     `SELECT tp.participant_id, tp.status, u.user_id, u.first_name, u.last_name, u.profile_picture_url
      FROM trip_participants tp
      JOIN users u ON tp.user_id = u.user_id
-     WHERE tp.trip_id = ?`, 
+     WHERE tp.trip_id = ?`,
     [tripId]
   );
   return rows;
