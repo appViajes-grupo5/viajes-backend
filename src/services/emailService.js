@@ -2,9 +2,22 @@ const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
 
+if (!process.env.BREVO_API_KEY) {
+  throw new Error('BREVO_API_KEY no está definida en las variables de entorno');
+}
+
 const defaultClient = brevo.ApiClient.instance;
 const apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
+if (apiKey) {
+  apiKey.apiKey = process.env.BREVO_API_KEY;
+} else {
+  defaultClient.authentications['api-key'] = {
+    type: 'apiKey',
+    'in': 'header',
+    name: 'api-key',
+    apiKey: process.env.BREVO_API_KEY
+  };
+}
 
 const apiInstance = new brevo.TransactionalEmailsApi();
 
