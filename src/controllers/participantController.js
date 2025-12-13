@@ -1,8 +1,8 @@
 const Participant = require('../models/participantModel');
 const Trip = require('../models/tripModel');
-// Nuevas importaciones para el envío de correos y obtención de datos de usuario
 const User = require('../models/userModel');
 const { sendEmail } = require('../services/emailService');
+const Notifications = require('../models/notificationsModel');
 
 // 1. Unirse a un viaje
 async function joinTrip(req, res) {
@@ -12,15 +12,32 @@ async function joinTrip(req, res) {
   if (!tripId) return res.status(400).json({ error: "Faltan datos (tripId)" });
 
   try {
-    // Opcional: Verificar que el viaje existe antes de intentar unirse
     const trip = await Trip.getTripById(tripId);
     if (!trip) {
       return res.status(404).json({ error: 'Viaje no encontrado' });
     }
 
-    // Verificar si el usuario es el creador (el creador no debería necesitar unirse a su propio viaje)
     if (trip.creator_id === userId) {
       return res.status(400).json({ error: 'Eres el creador del viaje, ya estás dentro.' });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(trip.start_date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(trip.end_date);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (today >= startDate) {
+      return res.status(400).json({ 
+        error: 'No puedes unirte a un viaje que ya ha comenzado' 
+      });
+    }
+
+    if (today > endDate) {
+      return res.status(400).json({ 
+        error: 'No puedes unirte a un viaje que ya ha finalizado' 
+      });
     }
 
     const existing = await Participant.getParticipant(tripId, userId);
@@ -29,6 +46,34 @@ async function joinTrip(req, res) {
     }
 
     await Participant.addParticipant(tripId, userId);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    const requester = await User.getUserById(userId);
+    const requesterName = `${requester.first_name} ${requester.last_name || ''}`.trim();
+    const creator = await User.getUserById(trip.creator_id);
+    
+    try {
+      await Notifications.createNotification(
+        trip.creator_id,
+        `${requesterName} ha solicitado unirse a tu viaje "${trip.title}"`,
+        `${frontendUrl}/viaje/${tripId}`
+      );
+    } catch (err) {
+      console.error('Error creando notificación:', err);
+    }
+
+    try {
+      if (creator && creator.email) {
+        await sendEmail(
+          creator.email,
+          `Nueva solicitud para tu viaje "${trip.title}"`,
+          `Hola ${creator.first_name},\n\n${requesterName} ha solicitado unirse a tu viaje "${trip.title}". Entra en la app para revisar y gestionar la solicitud.\n\n${frontendUrl}/viaje/${tripId}`
+        );
+      }
+    } catch (err) {
+      console.error('Error enviando email al creador:', err);
+    }
+    
     res.status(201).json({ message: 'Solicitud enviada correctamente' });
   } catch (err) {
     console.error("Error en joinTrip:", err);
@@ -79,23 +124,51 @@ async function updateParticipantStatus(req, res) {
     // 3. Ejecutar actualización
     await Participant.updateParticipantStatus(tripId, targetUserId, status);
 
-    // 4. ENVÍO DE EMAIL
-    // Si el estado es 'approved', notificamos al usuario por correo
+    // 4. ENVÍO DE EMAIL Y NOTIFICACIÓN
     if (status === 'approved') {
       try {
         const participantUser = await User.getUserById(targetUserId);
 
-        // Verificamos que el usuario existe y tiene email
         if (participantUser && participantUser.email) {
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+          
           await sendEmail(
             participantUser.email,
             '¡Has sido aceptado en un viaje!',
             `Hola ${participantUser.first_name}, el creador del viaje "${trip.title}" ha aceptado tu solicitud. Entra en la app para ver los detalles y contactar con el grupo.`
           );
+
+          await Notifications.createNotification(
+            targetUserId,
+            `Has sido aceptado en el viaje "${trip.title}"`,
+            `${frontendUrl}/viaje/${tripId}`
+          );
         }
-      } catch (emailErr) {
-        // Solo logueamos el error del email para no fallar toda la petición http
-        console.error("Error enviando email de aceptación:", emailErr);
+      } catch (err) {
+        console.error("Error enviando notificación de aceptación:", err);
+      }
+    } else if (status === 'rejected') {
+      try {
+        const participantUser = await User.getUserById(targetUserId);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+
+        if (participantUser) {
+          await Notifications.createNotification(
+            targetUserId,
+            `Tu solicitud para el viaje "${trip.title}" ha sido rechazada`,
+            `${frontendUrl}/viajes`
+          );
+
+          if (participantUser.email) {
+            await sendEmail(
+              participantUser.email,
+              `Solicitud rechazada - Viaje "${trip.title}"`,
+              `Hola ${participantUser.first_name},\n\nLamentamos informarte que tu solicitud para unirte al viaje "${trip.title}" ha sido rechazada.\n\nPuedes explorar otros viajes disponibles en la plataforma.\n\n${frontendUrl}/viajes`
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error en notificación de rechazo:", err);
       }
     }
 
@@ -115,6 +188,22 @@ async function leaveTrip(req, res) {
   if (!tripId) return res.status(400).json({ error: "Faltan datos (tripId)" });
 
   try {
+    // Verificar que el viaje existe y no ha finalizado
+    const trip = await Trip.getTripById(tripId);
+    if (!trip) {
+      return res.status(404).json({ error: 'Viaje no encontrado' });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(trip.start_date);
+    startDate.setHours(0, 0, 0, 0);
+
+    // No permitir salir si el viaje ya comenzó
+    if (today >= startDate) {
+      return res.status(400).json({ error: 'No puedes cancelar tu plaza porque el viaje ya comenzó o finalizó' });
+    }
+
     await Participant.removeParticipant(tripId, userId);
     res.json({ message: 'Has salido del viaje correctamente' });
   } catch (err) {

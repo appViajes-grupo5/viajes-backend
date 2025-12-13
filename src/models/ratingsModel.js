@@ -30,12 +30,26 @@ async function getRatingById(ratingId) {
   return rows[0] || null;
 }
 
-//obtener valoraciones recibidas por un usuario
 async function getRatingsByUser(userId) {
   const [rows] = await pool.query(
-    `SELECT rating_id, trip_id, rater_user_id, rated_user_id, rating_value, comment, created_at
-     FROM ratings
-     WHERE rated_user_id = ?`,
+    `SELECT 
+      r.rating_id, 
+      r.trip_id, 
+      r.rater_user_id, 
+      r.rated_user_id, 
+      r.rating_value, 
+      r.comment, 
+      r.created_at,
+      rater.first_name as rater_first_name,
+      rater.last_name as rater_last_name,
+      rater.profile_picture_url as rater_profile_picture_url,
+      trip.title as trip_title,
+      trip.destination as trip_destination
+     FROM ratings r
+     LEFT JOIN users rater ON r.rater_user_id = rater.user_id
+     LEFT JOIN trips trip ON r.trip_id = trip.trip_id
+     WHERE r.rated_user_id = ?
+     ORDER BY r.created_at DESC`,
     [userId]
   );
 
