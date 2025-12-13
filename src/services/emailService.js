@@ -1,17 +1,8 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const fs = require('fs');
 const path = require('path');
 
-// Configuración (usar variables de entorno en producción)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true solo para 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS // App Password
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Lee un template HTML y reemplaza las variables
@@ -45,17 +36,17 @@ function loadTemplate(templateName, variables) {
  */
 async function sendEmail(to, subject, text) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
+    const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const data = await resend.emails.send({
+      from,
       to,
       subject,
       text
     });
-    console.log("Email enviado: %s", info.messageId);
-    return info;
+    console.log("Email enviado: %s", data.id);
+    return data;
   } catch (error) {
     console.error("Error enviando email:", error);
-    // No lanzamos error para no detener el flujo principal de la app
     throw error;
   }
 }
@@ -70,20 +61,19 @@ async function sendEmail(to, subject, text) {
 async function sendEmailWithTemplate(to, subject, templateName, variables) {
   try {
     const html = loadTemplate(templateName, variables);
-
-    // Generar versión texto plano básica
     const text = html.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n');
+    const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
+    const data = await resend.emails.send({
+      from,
       to,
       subject,
       text,
       html
     });
 
-    console.log("Email con template enviado: %s", info.messageId);
-    return info;
+    console.log("Email con template enviado: %s", data.id);
+    return data;
   } catch (error) {
     console.error("Error enviando email con template:", error);
     throw error;
