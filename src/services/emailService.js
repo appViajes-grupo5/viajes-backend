@@ -2,8 +2,11 @@ const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
 
+const defaultClient = brevo.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
 const apiInstance = new brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
 function parseEmailFrom(emailFrom) {
   const match = emailFrom.match(/^(.+?)\s*<(.+?)>$/);
