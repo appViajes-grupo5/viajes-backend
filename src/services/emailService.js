@@ -144,9 +144,51 @@ async function sendWelcomeConfirmedEmail(userEmail, userName) {
   }
 }
 
+async function sendPasswordResetEmail(userEmail, userName, resetUrl) {
+  try {
+    await sendEmailWithTemplate(
+      userEmail,
+      'Restablece tu contraseña - Travel App',
+      'password-reset-email',
+      {
+        userName: userName,
+        resetUrl: resetUrl
+      }
+    );
+    console.log(`Email de reset de contraseña enviado a ${userEmail}`);
+  } catch (error) {
+    console.error(`Error enviando email de reset de contraseña a ${userEmail}:`, error);
+    throw error;
+  }
+}
+
+async function sendPasswordResetConfirmationEmail(userEmail, userName, email, password) {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+  
+  try {
+    await sendEmailWithTemplate(
+      userEmail,
+      'Contraseña restablecida exitosamente - Travel App',
+      'password-reset-confirmation-email',
+      {
+        userName: userName,
+        userEmail: email,
+        userPassword: password,
+        frontendUrl: frontendUrl
+      }
+    );
+    console.log(`Email de confirmación de reset de contraseña enviado a ${userEmail}`);
+  } catch (error) {
+    console.error(`Error enviando email de confirmación de reset a ${userEmail}:`, error);
+    throw error;
+  }
+}
+
 module.exports = { 
   sendEmail, 
   sendEmailWithTemplate, 
   sendConfirmationEmail,
-  sendWelcomeConfirmedEmail
+  sendWelcomeConfirmedEmail,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmationEmail
 };

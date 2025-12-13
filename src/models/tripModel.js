@@ -77,26 +77,168 @@ async function getTripById(tripId) {
   return trip;;
 }
 
-//listar todos los viajes
-async function getAllTrips() {
-  const [rows] = await pool.query(
-    `SELECT trip_id, creator_id, title, description, destination, start_date, end_date,
-            estimated_cost, min_participants, transport_details, itinerary, created_at
-     FROM trips`
-  );
-  return rows;
-}
+async function getAllTrips(filters = {}, page = 1, limit = 20) {
+  const offset = (page - 1) * limit;
+  const conditions = [];
+  const values = [];
 
-//viajes creados por un usuario
-async function getTripsByUser(userId) {
+  if (filters.destination) {
+    conditions.push('destination LIKE ?');
+    values.push(`%${filters.destination}%`);
+  }
+
+  if (filters.startDateFrom) {
+    conditions.push('start_date >= ?');
+    values.push(filters.startDateFrom);
+  }
+
+  if (filters.startDateTo) {
+    conditions.push('start_date <= ?');
+    values.push(filters.startDateTo);
+  }
+
+  if (filters.endDateFrom) {
+    conditions.push('end_date >= ?');
+    values.push(filters.endDateFrom);
+  }
+
+  if (filters.endDateTo) {
+    conditions.push('end_date <= ?');
+    values.push(filters.endDateTo);
+  }
+
+  if (filters.minCost !== undefined && filters.minCost !== null) {
+    conditions.push('estimated_cost >= ?');
+    values.push(filters.minCost);
+  }
+
+  if (filters.maxCost !== undefined && filters.maxCost !== null) {
+    conditions.push('estimated_cost <= ?');
+    values.push(filters.maxCost);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  
+  let orderBy = 'ORDER BY created_at DESC';
+  if (filters.sortBy) {
+    const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
+    const validSorts = {
+      'date': 'start_date',
+      'price': 'estimated_cost',
+      'created': 'created_at',
+      'destination': 'destination'
+    };
+    if (validSorts[filters.sortBy]) {
+      orderBy = `ORDER BY ${validSorts[filters.sortBy]} ${sortOrder}`;
+    }
+  }
+
   const [rows] = await pool.query(
     `SELECT trip_id, creator_id, title, description, destination, start_date, end_date,
             estimated_cost, min_participants, transport_details, itinerary, created_at
      FROM trips
-     WHERE creator_id = ?`,
-    [userId]
+     ${whereClause}
+     ${orderBy}
+     LIMIT ? OFFSET ?`,
+    [...values, limit, offset]
   );
-  return rows;
+
+  const [countRows] = await pool.query(
+    `SELECT COUNT(*) as total
+     FROM trips
+     ${whereClause}`,
+    values
+  );
+
+  return {
+    trips: rows,
+    total: countRows[0].total,
+    page,
+    limit,
+    totalPages: Math.ceil(countRows[0].total / limit)
+  };
+}
+
+async function getTripsByUser(userId, filters = {}, page = 1, limit = 20) {
+  const offset = (page - 1) * limit;
+  const conditions = ['creator_id = ?'];
+  const values = [userId];
+
+  if (filters.destination) {
+    conditions.push('destination LIKE ?');
+    values.push(`%${filters.destination}%`);
+  }
+
+  if (filters.startDateFrom) {
+    conditions.push('start_date >= ?');
+    values.push(filters.startDateFrom);
+  }
+
+  if (filters.startDateTo) {
+    conditions.push('start_date <= ?');
+    values.push(filters.startDateTo);
+  }
+
+  if (filters.endDateFrom) {
+    conditions.push('end_date >= ?');
+    values.push(filters.endDateFrom);
+  }
+
+  if (filters.endDateTo) {
+    conditions.push('end_date <= ?');
+    values.push(filters.endDateTo);
+  }
+
+  if (filters.minCost !== undefined && filters.minCost !== null) {
+    conditions.push('estimated_cost >= ?');
+    values.push(filters.minCost);
+  }
+
+  if (filters.maxCost !== undefined && filters.maxCost !== null) {
+    conditions.push('estimated_cost <= ?');
+    values.push(filters.maxCost);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  let orderBy = 'ORDER BY created_at DESC';
+  if (filters.sortBy) {
+    const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
+    const validSorts = {
+      'date': 'start_date',
+      'price': 'estimated_cost',
+      'created': 'created_at',
+      'destination': 'destination'
+    };
+    if (validSorts[filters.sortBy]) {
+      orderBy = `ORDER BY ${validSorts[filters.sortBy]} ${sortOrder}`;
+    }
+  }
+
+  const [rows] = await pool.query(
+    `SELECT trip_id, creator_id, title, description, destination, start_date, end_date,
+            estimated_cost, min_participants, transport_details, itinerary, created_at
+     FROM trips
+     ${whereClause}
+     ${orderBy}
+     LIMIT ? OFFSET ?`,
+    [...values, limit, offset]
+  );
+
+  const [countRows] = await pool.query(
+    `SELECT COUNT(*) as total
+     FROM trips
+     ${whereClause}`,
+    values
+  );
+
+  return {
+    trips: rows,
+    total: countRows[0].total,
+    page,
+    limit,
+    totalPages: Math.ceil(countRows[0].total / limit)
+  };
 }
 
 //actualizar viaje por su id

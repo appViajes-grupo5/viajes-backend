@@ -90,10 +90,54 @@ async function updateUser(userId, updateData) {
   return await getUserById(userId);
 }
 
+async function updateAverageRating(userId) {
+  const [rows] = await pool.query(
+    `SELECT AVG(rating_value) as avg_rating
+     FROM ratings
+     WHERE rated_user_id = ?`,
+    [userId]
+  );
+  
+  const avgRating = rows[0].avg_rating ? parseFloat(rows[0].avg_rating).toFixed(2) : 0.00;
+  
+  await pool.query(
+    'UPDATE users SET average_rating = ? WHERE user_id = ?',
+    [avgRating, userId]
+  );
+  
+  return avgRating;
+}
+
+async function setResetToken(userId, token, expiresAt) {
+  await pool.query(
+    'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE user_id = ?',
+    [token, expiresAt, userId]
+  );
+}
+
+async function getUserByResetToken(token) {
+  const [rows] = await pool.query(
+    'SELECT user_id, email, first_name, last_name, reset_token_expires FROM users WHERE reset_token = ?',
+    [token]
+  );
+  return rows[0] || null;
+}
+
+async function updatePassword(userId, passwordHash) {
+  await pool.query(
+    'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE user_id = ?',
+    [passwordHash, userId]
+  );
+}
+
 module.exports = {
   crearUsuario,
   getUserByEmail,
   getUserById,
   updateUser,
-  confirmUser
+  confirmUser,
+  updateAverageRating,
+  setResetToken,
+  getUserByResetToken,
+  updatePassword
 };

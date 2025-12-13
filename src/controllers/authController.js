@@ -197,4 +197,103 @@ async function confirmAccount(req, res) {
   }
 }
 
-module.exports = { login, register, confirmAccount };
+async function requestPasswordReset(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email es requerido' });
+  }
+
+  try {
+    const user = await User.getUserByEmail(email);
+    
+    if (!user) {
+      return res.json({ 
+        message: 'Si el email existe, recibirás un enlace para restablecer tu contraseña' 
+      });
+    }
+
+    const resetToken = jwt.sign(
+      { id: user.user_id, email: user.email, type: 'password_reset' },
+      process.env.JWT_SECRET || 'tu_secret_key_aqui',
+      { expiresIn: '1h' }
+    );
+
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    await User.setResetToken(user.user_id, resetToken, expiresAt);
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const { sendPasswordResetEmail } = require('../services/emailService');
+    await sendPasswordResetEmail(user.email, `${user.first_name} ${user.last_name || ''}`.trim(), resetUrl);
+
+    res.json({ 
+      message: 'Si el email existe, recibirás un enlace para restablecer tu contraseña' 
+    });
+  } catch (err) {
+    console.error('Error solicitando reset de contraseña:', err);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
+  }
+}
+
+async function resetPassword(req, res) {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ error: 'Token y contraseña son requeridos' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'tu_secret_key_aqui'
+    );
+
+    if (decoded.type !== 'password_reset') {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    const user = await User.getUserByResetToken(token);
+    
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(user.reset_token_expires);
+    
+    if (now > expiresAt) {
+      return res.status(400).json({ error: 'Token expirado' });
+    }
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    await User.updatePassword(user.user_id, passwordHash);
+
+    const { sendPasswordResetConfirmationEmail } = require('../services/emailService');
+    const fullName = `${user.first_name} ${user.last_name || ''}`.trim();
+    await sendPasswordResetConfirmationEmail(user.email, fullName, user.email, password).catch((err) => {
+      console.error('Error enviando email de confirmación de reset (no crítico):', err);
+    });
+
+    res.json({ message: 'Contraseña restablecida exitosamente' });
+  } catch (err) {
+    console.error('Error restableciendo contraseña:', err);
+    
+    if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+    
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+}
+
+module.exports = { login, register, confirmAccount, requestPasswordReset, resetPassword };

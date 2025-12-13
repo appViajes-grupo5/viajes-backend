@@ -10,7 +10,11 @@ async function createComment(trip_id, user_id, comment_text) {
 
 async function getCommentById(commentId) {
   const [rows] = await pool.query(
-    'SELECT * FROM trip_comments WHERE comment_id = ?',
+    `SELECT tc.comment_id, tc.trip_id, tc.user_id, tc.comment_text, tc.created_at,
+            u.first_name, u.last_name, u.profile_picture_url
+     FROM trip_comments tc
+     JOIN users u ON tc.user_id = u.user_id
+     WHERE tc.comment_id = ?`,
     [commentId]
   );
   return rows[0] || null;
@@ -18,7 +22,12 @@ async function getCommentById(commentId) {
 
 async function getCommentsByTrip(tripId) {
   const [rows] = await pool.query(
-    'SELECT * FROM trip_comments WHERE trip_id = ? ORDER BY created_at DESC',
+    `SELECT tc.comment_id, tc.trip_id, tc.user_id, tc.comment_text, tc.created_at,
+            u.first_name, u.last_name, u.profile_picture_url
+     FROM trip_comments tc
+     JOIN users u ON tc.user_id = u.user_id
+     WHERE tc.trip_id = ? 
+     ORDER BY tc.created_at ASC`,
     [tripId]
   );
   return rows;

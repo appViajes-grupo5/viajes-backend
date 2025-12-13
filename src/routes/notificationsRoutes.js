@@ -9,8 +9,7 @@ router.use(authMiddleware);
 // Crear notificación
 router.post('/', notificationsController.create);
 
-// Listar notificaciones de un usuario
-router.get('/', notificationsController.getMyNotifications);
+router.get('/me', notificationsController.getMyNotifications);
 
 // Marcar como leída
 router.put('/:notification_id/read', notificationsController.markRead);
