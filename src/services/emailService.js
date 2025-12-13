@@ -4,10 +4,12 @@ const path = require('path');
 
 // Configuración (usar variables de entorno en producción)
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // O tu proveedor SMTP
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true solo para 465
   auth: {
-    user: process.env.EMAIL_USER, // Tu email
-    pass: process.env.EMAIL_PASS  // Tu contraseña de aplicación (App Password)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS // App Password
   }
 });
 
@@ -21,13 +23,13 @@ function loadTemplate(templateName, variables) {
   try {
     const templatePath = path.join(__dirname, '../templates/emails', `${templateName}.html`);
     let html = fs.readFileSync(templatePath, 'utf8');
-    
+
     // Reemplazar todas las variables del template
     Object.keys(variables).forEach(key => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       html = html.replace(regex, variables[key] || '');
     });
-    
+
     return html;
   } catch (error) {
     console.error(`Error cargando template ${templateName}:`, error);
@@ -68,10 +70,10 @@ async function sendEmail(to, subject, text) {
 async function sendEmailWithTemplate(to, subject, templateName, variables) {
   try {
     const html = loadTemplate(templateName, variables);
-    
+
     // Generar versión texto plano básica
     const text = html.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n');
-    
+
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
       to,
@@ -79,7 +81,7 @@ async function sendEmailWithTemplate(to, subject, templateName, variables) {
       text,
       html
     });
-    
+
     console.log("Email con template enviado: %s", info.messageId);
     return info;
   } catch (error) {
@@ -99,7 +101,7 @@ async function sendConfirmationEmail(userEmail, userName, password, confirmation
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
   const confirmationUrl = `${backendUrl}/api/auth/confirm/${confirmationToken}`;
-  
+
   try {
     await sendEmailWithTemplate(
       userEmail,
@@ -126,7 +128,7 @@ async function sendConfirmationEmail(userEmail, userName, password, confirmation
  */
 async function sendWelcomeConfirmedEmail(userEmail, userName) {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-  
+
   try {
     await sendEmailWithTemplate(
       userEmail,
@@ -164,7 +166,7 @@ async function sendPasswordResetEmail(userEmail, userName, resetUrl) {
 
 async function sendPasswordResetConfirmationEmail(userEmail, userName, email, password) {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-  
+
   try {
     await sendEmailWithTemplate(
       userEmail,
@@ -184,9 +186,9 @@ async function sendPasswordResetConfirmationEmail(userEmail, userName, email, pa
   }
 }
 
-module.exports = { 
-  sendEmail, 
-  sendEmailWithTemplate, 
+module.exports = {
+  sendEmail,
+  sendEmailWithTemplate,
   sendConfirmationEmail,
   sendWelcomeConfirmedEmail,
   sendPasswordResetEmail,
