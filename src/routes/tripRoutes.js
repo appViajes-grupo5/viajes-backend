@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const tripController = require('../controllers/tripController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+const tripController = require("../controllers/tripController");
+const { authMiddleware } = require("../middlewares/authMiddleware");
+const { validateTrip } = require("../validators/tripValidator");
 
 // Rutas públicas
 router.get('/', tripController.getTrips);
