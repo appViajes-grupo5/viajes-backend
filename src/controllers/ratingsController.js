@@ -8,6 +8,7 @@ const {
 
 const { getTripById } = require('../models/tripModel');
 const { getParticipant } = require('../models/participantModel');
+const { updateAverageRating } = require('../models/userModel');
 
 //crear valoración POST – requiere auth
 async function createRatingController(req, res) {
@@ -68,6 +69,18 @@ async function createRatingController(req, res) {
       });
     }
 
+    // Validar que el viaje haya finalizado (end_date < hoy)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tripEndDate = new Date(trip.end_date);
+    tripEndDate.setHours(0, 0, 0, 0);
+    
+    if (tripEndDate >= today) {
+      return res.status(400).json({
+        error: "Solo puedes valorar después de que el viaje haya finalizado"
+      });
+    }
+
     // Comprobar si ya existe una valoración del mismo usuario en este viaje
     const existingRating = await getRatingByTripAndUsers(trip_id, userId, rated_user_id);
     if (existingRating) {
@@ -83,6 +96,11 @@ async function createRatingController(req, res) {
       rated_user_id,
       rating_value:numericRating,
       comment
+    });
+
+    // Actualizar promedio de valoraciones del usuario valorado
+    await updateAverageRating(rated_user_id).catch(err => {
+      console.error('Error actualizando promedio de valoraciones:', err);
     });
 
     return res.status(201).json({

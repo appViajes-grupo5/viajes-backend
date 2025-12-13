@@ -1,5 +1,6 @@
 const TripComments = require('../models/tripCommentsModel');
 const Participant = require('../models/participantModel');
+const Trip = require('../models/tripModel');
 
 async function create(req, res) {
   const { trip_id, comment_text } = req.body;
@@ -10,12 +11,17 @@ async function create(req, res) {
   }
 
   try {
-    //Validar que el usuario es participante ACEPTADO del viaje
+    const trip = await Trip.getTripById(trip_id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Viaje no encontrado' });
+    }
+
+    const isCreator = trip.creator_id === user_id;
     const participant = await Participant.getParticipant(trip_id, user_id);
-    
-    // Si no existe registro o el estado no es 'approved' (asumiendo que ese es el status de aceptado)
-    if (!participant || participant.status !== 'approved') {
-        return res.status(403).json({ error: 'Solo los participantes aceptados pueden comentar en este viaje' });
+    const isApproved = participant && (participant.status === 'approved' || participant.status === 'accepted');
+
+    if (!isCreator && !isApproved) {
+      return res.status(403).json({ error: 'Solo el creador y los participantes aceptados pueden comentar en este viaje' });
     }
 
     const commentId = await TripComments.createComment(trip_id, user_id, comment_text);
@@ -30,8 +36,23 @@ async function create(req, res) {
 
 async function list(req, res) {
   const { trip_id } = req.params;
+  const user_id = req.user.id;
 
   try {
+    const participant = await Participant.getParticipant(trip_id, user_id);
+    const trip = await Trip.getTripById(trip_id);
+    
+    if (!trip) {
+      return res.status(404).json({ error: 'Viaje no encontrado' });
+    }
+
+    const isCreator = trip.creator_id === user_id;
+    const isApproved = participant && (participant.status === 'approved' || participant.status === 'accepted');
+
+    if (!isCreator && !isApproved) {
+      return res.status(403).json({ error: 'Solo los participantes aceptados pueden ver los comentarios' });
+    }
+
     const comments = await TripComments.getCommentsByTrip(trip_id);
     res.json(comments);
   } catch (err) {

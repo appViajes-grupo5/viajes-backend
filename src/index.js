@@ -28,7 +28,6 @@ app.use('/api/trip-comments', tripCommentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/participants', participantRoutes);
 app.use('/api/ratings', ratingsRoutes);
-app.use('/api/forum', require('./routes/forumRoutes'));
 
 const PORT = process.env.PORT || 4000;
 
