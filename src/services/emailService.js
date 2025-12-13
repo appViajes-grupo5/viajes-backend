@@ -1,21 +1,17 @@
-const nodemailer = require('nodemailer');
+const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
 
-// Configuración (usar variables de entorno en producción)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // App Password
-  },
-  tls: {
-    ciphers: 'SSLv3',
-  },
-});
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+
+function parseEmailFrom(emailFrom) {
+  const match = emailFrom.match(/^(.+?)\s*<(.+?)>$/);
+  if (match) {
+    return { name: match[1].replace(/"/g, '').trim(), email: match[2].trim() };
+  }
+  return { email: emailFrom };
+}
 
 /**
  * Lee un template HTML y reemplaza las variables
@@ -53,17 +49,17 @@ function loadTemplate(templateName, variables) {
  */
 async function sendEmail(to, subject, text) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
-      to,
-      subject,
-      text,
-    });
-    console.log('Email enviado: %s', info.messageId);
-    return info;
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.textContent = text;
+    sendSmtpEmail.sender = parseEmailFrom(process.env.EMAIL_FROM || 'no-reply@travelapp.com');
+    sendSmtpEmail.to = [{ email: to }];
+
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email enviado: %s', data.messageId);
+    return { messageId: data.messageId };
   } catch (error) {
     console.error('Error enviando email:', error);
-    // No lanzamos error para no detener el flujo principal de la app
     throw error;
   }
 }
@@ -78,20 +74,18 @@ async function sendEmail(to, subject, text) {
 async function sendEmailWithTemplate(to, subject, templateName, variables) {
   try {
     const html = loadTemplate(templateName, variables);
-
-    // Generar versión texto plano básica
     const text = html.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n');
 
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
-      to,
-      subject,
-      text,
-      html,
-    });
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
+    sendSmtpEmail.textContent = text;
+    sendSmtpEmail.sender = parseEmailFrom(process.env.EMAIL_FROM || 'no-reply@travelapp.com');
+    sendSmtpEmail.to = [{ email: to }];
 
-    console.log('Email con template enviado: %s', info.messageId);
-    return info;
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email con template enviado: %s', data.messageId);
+    return { messageId: data.messageId };
   } catch (error) {
     console.error('Error enviando email con template:', error);
     throw error;
