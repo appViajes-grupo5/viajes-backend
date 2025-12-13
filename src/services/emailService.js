@@ -7,16 +7,14 @@ if (!process.env.BREVO_API_KEY) {
 }
 
 const defaultClient = brevo.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
-if (apiKey) {
-  apiKey.apiKey = process.env.BREVO_API_KEY;
-} else {
-  defaultClient.authentications['api-key'] = {
-    type: 'apiKey',
-    'in': 'header',
-    name: 'api-key',
-    apiKey: process.env.BREVO_API_KEY
-  };
+const apiKeyAuth = defaultClient.authentications['api-key'];
+if (!apiKeyAuth) {
+  throw new Error('No se pudo acceder a la autenticación api-key');
+}
+apiKeyAuth.apiKey = String(process.env.BREVO_API_KEY).trim();
+
+if (!apiKeyAuth.apiKey) {
+  throw new Error('BREVO_API_KEY está vacía después de procesarla');
 }
 
 const apiInstance = new brevo.TransactionalEmailsApi();
