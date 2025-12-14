@@ -1,17 +1,31 @@
-const nodemailer = require('nodemailer');
+const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
 
-// Configuración (usar variables de entorno en producción)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true solo para 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS // App Password
+if (!process.env.BREVO_API_KEY) {
+  throw new Error('BREVO_API_KEY no está definida en las variables de entorno');
+}
+
+const defaultClient = brevo.ApiClient.instance;
+const apiKeyAuth = defaultClient.authentications['api-key'];
+if (!apiKeyAuth) {
+  throw new Error('No se pudo acceder a la autenticación api-key');
+}
+apiKeyAuth.apiKey = String(process.env.BREVO_API_KEY).trim();
+
+if (!apiKeyAuth.apiKey) {
+  throw new Error('BREVO_API_KEY está vacía después de procesarla');
+}
+
+const apiInstance = new brevo.TransactionalEmailsApi();
+
+function parseEmailFrom(emailFrom) {
+  const match = emailFrom.match(/^(.+?)\s*<(.+?)>$/);
+  if (match) {
+    return { name: match[1].replace(/"/g, '').trim(), email: match[2].trim() };
   }
-});
+  return { email: emailFrom };
+}
 
 /**
  * Lee un template HTML y reemplaza las variables
@@ -21,11 +35,15 @@ const transporter = nodemailer.createTransport({
  */
 function loadTemplate(templateName, variables) {
   try {
-    const templatePath = path.join(__dirname, '../templates/emails', `${templateName}.html`);
+    const templatePath = path.join(
+      __dirname,
+      '../templates/emails',
+      `${templateName}.html`
+    );
     let html = fs.readFileSync(templatePath, 'utf8');
 
     // Reemplazar todas las variables del template
-    Object.keys(variables).forEach(key => {
+    Object.keys(variables).forEach((key) => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       html = html.replace(regex, variables[key] || '');
     });
@@ -45,17 +63,17 @@ function loadTemplate(templateName, variables) {
  */
 async function sendEmail(to, subject, text) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
-      to,
-      subject,
-      text
-    });
-    console.log("Email enviado: %s", info.messageId);
-    return info;
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.textContent = text;
+    sendSmtpEmail.sender = parseEmailFrom(process.env.EMAIL_FROM || 'no-reply@travelapp.com');
+    sendSmtpEmail.to = [{ email: to }];
+
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email enviado: %s', data.messageId);
+    return { messageId: data.messageId };
   } catch (error) {
-    console.error("Error enviando email:", error);
-    // No lanzamos error para no detener el flujo principal de la app
+    console.error('Error enviando email:', error);
     throw error;
   }
 }
@@ -70,22 +88,20 @@ async function sendEmail(to, subject, text) {
 async function sendEmailWithTemplate(to, subject, templateName, variables) {
   try {
     const html = loadTemplate(templateName, variables);
-
-    // Generar versión texto plano básica
     const text = html.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n');
 
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Travel App" <no-reply@travelapp.com>',
-      to,
-      subject,
-      text,
-      html
-    });
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
+    sendSmtpEmail.textContent = text;
+    sendSmtpEmail.sender = parseEmailFrom(process.env.EMAIL_FROM || 'no-reply@travelapp.com');
+    sendSmtpEmail.to = [{ email: to }];
 
-    console.log("Email con template enviado: %s", info.messageId);
-    return info;
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email con template enviado: %s', data.messageId);
+    return { messageId: data.messageId };
   } catch (error) {
-    console.error("Error enviando email con template:", error);
+    console.error('Error enviando email con template:', error);
     throw error;
   }
 }
@@ -97,7 +113,12 @@ async function sendEmailWithTemplate(to, subject, templateName, variables) {
  * @param {string} password - Contraseña del usuario (en texto plano)
  * @param {string} confirmationToken - Token de confirmación
  */
-async function sendConfirmationEmail(userEmail, userName, password, confirmationToken) {
+async function sendConfirmationEmail(
+  userEmail,
+  userName,
+  password,
+  confirmationToken
+) {
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
   const confirmationUrl = `${backendUrl}/api/auth/confirm/${confirmationToken}`;
@@ -111,12 +132,15 @@ async function sendConfirmationEmail(userEmail, userName, password, confirmation
         userName: userName,
         userEmail: userEmail,
         userPassword: password,
-        confirmationUrl: confirmationUrl
+        confirmationUrl: confirmationUrl,
       }
     );
     console.log(`Email de confirmación enviado a ${userEmail}`);
   } catch (error) {
-    console.error(`Error enviando email de confirmación a ${userEmail}:`, error);
+    console.error(
+      `Error enviando email de confirmación a ${userEmail}:`,
+      error
+    );
     // No lanzamos el error para no interrumpir el registro
   }
 }
@@ -136,12 +160,15 @@ async function sendWelcomeConfirmedEmail(userEmail, userName) {
       'welcome-confirmed-email',
       {
         userName: userName,
-        frontendUrl: frontendUrl
+        frontendUrl: frontendUrl,
       }
     );
     console.log(`Email de bienvenida (confirmado) enviado a ${userEmail}`);
   } catch (error) {
-    console.error(`Error enviando email de bienvenida confirmado a ${userEmail}:`, error);
+    console.error(
+      `Error enviando email de bienvenida confirmado a ${userEmail}:`,
+      error
+    );
     // No lanzamos el error para no interrumpir la confirmación
   }
 }
@@ -154,17 +181,25 @@ async function sendPasswordResetEmail(userEmail, userName, resetUrl) {
       'password-reset-email',
       {
         userName: userName,
-        resetUrl: resetUrl
+        resetUrl: resetUrl,
       }
     );
     console.log(`Email de reset de contraseña enviado a ${userEmail}`);
   } catch (error) {
-    console.error(`Error enviando email de reset de contraseña a ${userEmail}:`, error);
+    console.error(
+      `Error enviando email de reset de contraseña a ${userEmail}:`,
+      error
+    );
     throw error;
   }
 }
 
-async function sendPasswordResetConfirmationEmail(userEmail, userName, email, password) {
+async function sendPasswordResetConfirmationEmail(
+  userEmail,
+  userName,
+  email,
+  password
+) {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
 
   try {
@@ -176,12 +211,17 @@ async function sendPasswordResetConfirmationEmail(userEmail, userName, email, pa
         userName: userName,
         userEmail: email,
         userPassword: password,
-        frontendUrl: frontendUrl
+        frontendUrl: frontendUrl,
       }
     );
-    console.log(`Email de confirmación de reset de contraseña enviado a ${userEmail}`);
+    console.log(
+      `Email de confirmación de reset de contraseña enviado a ${userEmail}`
+    );
   } catch (error) {
-    console.error(`Error enviando email de confirmación de reset a ${userEmail}:`, error);
+    console.error(
+      `Error enviando email de confirmación de reset a ${userEmail}:`,
+      error
+    );
     throw error;
   }
 }
@@ -192,5 +232,5 @@ module.exports = {
   sendConfirmationEmail,
   sendWelcomeConfirmedEmail,
   sendPasswordResetEmail,
-  sendPasswordResetConfirmationEmail
+  sendPasswordResetConfirmationEmail,
 };
