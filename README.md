@@ -51,7 +51,7 @@ Este directorio contiene la lógica del servidor, API REST y conexión a base de
 *   **Base de Datos**: MySQL
 *   **Seguridad**: JWT (JSON Web Tokens) & Bcrypt
 *   **Validación**: Zod
-*   **Emails**: Brevo / Nodemailer
+*   **Emails**: Brevo
 
 ### 📋 Prerrequisitos
 
@@ -135,9 +135,8 @@ Todas las rutas públicas y protegidas están prefijadas bajo `/api`.
 
 | Rol Sugerido | Email (Login) | Contraseña | Propósito |
 | :--- | :--- | :--- | :--- |
-| **El Organizador** | `creador@test.com` | `123456` | Usuario que crea viajes y gestiona participantes. |
-| **El Viajero** | `viajero@test.com` | `123456` | Usuario que busca y se une a viajes. |
-| **El Admin** | `admin@test.com` | `123456` | (Opcional) Para gestión global. |
+| **Test1** | `test1@test.com` | `123456789` | (Opcional) Para gestión global. |
+| **Test2** | `test2@test.com` | `123456789` | (Opcional) Para gestión global. |
 
 ---
 
@@ -151,3 +150,8 @@ Este proyecto ha sido desarrollado como Trabajo de Fin de Máster (TFM) por:
 *   **Manuel Enrique Ortiz Ros**
 *   **Aurelio Romero Sanchez**
 *   **Andrea Stefany Proano Muñoz**
+
+## URL de Produccion
+**https://viajes-backend-production.up.railway.app/**
+
+
